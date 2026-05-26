@@ -1,17 +1,49 @@
-// --- 1. ANIMASI KELOPAK SAKURA GUGUR ---
-const fragment = document.createDocumentFragment();
-for (let i = 0; i < 20; i++) {
-    const sakura = document.createElement("div");
-    sakura.className = "sakura";
-    sakura.style.left = Math.random() * 100 + "vw";
-    sakura.style.animationDuration = (6 + Math.random() * 6) + "s";
-    sakura.style.opacity = Math.random();
-    const size = (8 + Math.random() * 8) + "px";
-    sakura.style.width = size;
-    sakura.style.height = size;
-    fragment.appendChild(sakura);
-}
-document.body.appendChild(fragment);
+// --- 1. ANIMASI KELOPAK SAKURA GUGUR (OPTIMIZED) ---
+document.addEventListener("DOMContentLoaded", () => {
+    // Deteksi perangkat untuk membatasi jumlah partikel demi performa HP
+    const isMobile = window.innerWidth < 768;
+    const maxSakura = isMobile ? 20 : 50; 
+    let currentSakuraCount = 0;
+
+    function spawnSakura() {
+        if (currentSakuraCount >= maxSakura) return;
+
+        const sakura = document.createElement("div");
+        sakura.className = "sakura";
+        
+        sakura.style.left = Math.random() * 100 + "vw";
+        
+        const duration = (5 + Math.random() * 5);
+        sakura.style.animationDuration = duration + "s";
+        
+        sakura.style.opacity = Math.random() * 0.5 + 0.5; 
+        
+        const size = (8 + Math.random() * 8) + "px";
+        sakura.style.width = size;
+        sakura.style.height = size;
+
+        // Mengirimkan nilai pergerakan X dan rotasi ke CSS lewat variabel agar diproses GPU
+        const endX = (Math.random() * 60 - 30) + "px"; 
+        const randomRotation = (Math.random() * 360 + 360) + "deg"; 
+        sakura.style.setProperty('--end-x', endX);
+        sakura.style.setProperty('--rot', randomRotation);
+
+        document.body.appendChild(sakura);
+        currentSakuraCount++;
+
+        // Fitur Pembersih Otomatis agar RAM tidak kepenuhan
+        setTimeout(() => {
+            sakura.remove();
+            currentSakuraCount--;
+            spawnSakura(); 
+        }, duration * 1000);
+    }
+
+    const spawnDelay = isMobile ? 400 : 200;
+    for (let i = 0; i < maxSakura; i++) {
+        setTimeout(spawnSakura, i * spawnDelay);
+    }
+});
 
 // --- 2. LOGIKA INTERAKSI MODAL & DELEGASI EVENT ---
 const modal = document.getElementById('universalModal');
@@ -50,11 +82,9 @@ document.querySelector('.container').addEventListener('click', (e) => {
 
     modal.classList.add('active');
     
-    // Pasang event close untuk tombol kembali baru yang di-render
     document.getElementById('modalCloseBtn').addEventListener('click', () => modal.classList.remove('active'));
 });
 
-// Tutup modal ketika mengklik area overlay hitam transparan
 modal.addEventListener('click', (e) => { 
     if (e.target === modal) modal.classList.remove('active'); 
 });
@@ -63,23 +93,19 @@ modal.addEventListener('click', (e) => {
 const audio = document.getElementById('bgMusic');
 const musicToggle = document.getElementById('musicToggle');
 
-// Fungsi pemicu saat user berinteraksi pertama kali dengan layar
 function pemicuMusik() {
     audio.play().then(() => {
-        musicToggle.classList.add('playing'); // Jalankan animasi putar tombol
-        // Bersihkan event listener agar musik tidak ter-restart pada klik berikutnya
+        musicToggle.classList.add('playing');
         document.removeEventListener('click', pemicuMusik);
         document.removeEventListener('touchstart', pemicuMusik);
     }).catch(err => console.log("Autoplay ditahan browser, menunggu interaksi layar..."));
 }
 
-// Deteksi sentuhan/klik awal pengguna pada halaman
 document.addEventListener('click', pemicuMusik);
 document.addEventListener('touchstart', pemicuMusik);
 
-// Logika klik manual pada tombol musik melayang (Play / Jeda)
 musicToggle.addEventListener('click', (e) => {
-    e.stopPropagation(); // Mencegah event bubling ke pemicu global
+    e.stopPropagation();
     if (audio.paused) {
         audio.play();
         musicToggle.classList.add('playing');
@@ -88,4 +114,3 @@ musicToggle.addEventListener('click', (e) => {
         musicToggle.classList.remove('playing');
     }
 });
-          
